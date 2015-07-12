@@ -7,6 +7,7 @@
 //
 
 #import "ViewController.h"
+#import <CoreText/CoreText.h>
 #import "YXLabel.h"
 
 @interface ViewController ()
@@ -20,14 +21,15 @@
     // Do any additional setup after loading the view, typically from a nib.
     self.view.backgroundColor = [UIColor redColor];
     YXLabel *label = [[YXLabel alloc] initWithFrame:CGRectMake(10, 40, 200, 44)];
-    //label.frame = CGRectMake(10, 40, 100, 44);
-    label.backgroundColor = [UIColor greenColor];
-    label.text = @"覃雨翔回复张宝山";
+    label.backgroundColor = [UIColor whiteColor];
+
+    label.text = @"段誉回复张宝山";
+ 
     [label addClickText:@"张宝山" action:^{
         NSLog(@"点击了:张宝山");
     }];
-    [label addClickText:@"覃雨翔" action:^{
-         NSLog(@"点击了:覃雨翔");
+    [label addClickText:@"段誉" action:^{
+         NSLog(@"点击了:段誉");
     }];
     [self.view addSubview:label];
 }

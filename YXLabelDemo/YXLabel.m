@@ -11,6 +11,7 @@
 
 @interface YXLabel ()
 
+@property(nonatomic) NSRange highlightedRange;
 @property (strong,nonatomic) NSMutableArray *clickTextArray;
 
 @end
@@ -38,16 +39,44 @@
     return self;
 }
 
+- (void)highlightWordContainingCharacterAtRange:(NSRange)range {
+    
+    NSRange wordRange = range;
+    
+    if (wordRange.location == self.highlightedRange.location) {
+        return; //this word is already highlighted
+    }
+    else {
+        [self removeHighlight]; //remove highlight on previously selected word
+    }
+    
+    self.highlightedRange = wordRange;
+    
+    //highlight selected word
+    NSMutableAttributedString* attributedString = [self.attributedText mutableCopy];
+    [attributedString addAttribute:NSBackgroundColorAttributeName value:[UIColor lightGrayColor] range:wordRange];
+    self.attributedText = attributedString;
+}
+
+- (void)removeHighlight {
+    
+    if (self.highlightedRange.location != NSNotFound) {
+        
+        //remove highlight from previously selected word
+        NSMutableAttributedString* attributedString = [self.attributedText mutableCopy];
+        [attributedString removeAttribute:NSBackgroundColorAttributeName range:self.highlightedRange];
+        self.attributedText = attributedString;
+        self.highlightedRange = NSMakeRange(NSNotFound, 0);
+    }
+}
+
+
+//计算点击位置
 - (CFIndex)characterIndexAtPoint:(CGPoint)point {
-    
-    ////////
-    
     NSMutableAttributedString* optimizedAttributedText = [self.attributedText mutableCopy];
-    
     [self.attributedText enumerateAttribute:(NSString*)kCTParagraphStyleAttributeName inRange:NSMakeRange(0, [optimizedAttributedText length]) options:0 usingBlock:^(id value, NSRange range, BOOL *stop) {
-        
+
         NSMutableParagraphStyle* paragraphStyle = [value mutableCopy];
-        
         if ([paragraphStyle lineBreakMode] == kCTLineBreakByTruncatingTail) {
             [paragraphStyle setLineBreakMode:NSLineBreakByWordWrapping];
         }
@@ -56,9 +85,7 @@
         [optimizedAttributedText addAttribute:(NSString*)kCTParagraphStyleAttributeName value:paragraphStyle range:range];
         
     }];
-    
-    ////////
-    
+
     if (!CGRectContainsPoint(self.bounds, point)) {
         return NSNotFound;
     }
@@ -136,7 +163,7 @@
     
     CFRelease(frame);
     CFRelease(path);
-    
+    NSLog(@"%lu",idx);
     return idx;
 }
 
@@ -155,6 +182,20 @@
     return textRect;
 }
 
+-(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event{
+    UITouch *touch = [touches anyObject];
+    if (self.clickTextArray) {
+        for (YXLabelModel *model in self.clickTextArray) {
+            NSRange range = [self.text rangeOfString:model.text];
+            CFIndex index = [self characterIndexAtPoint:[touch locationInView:self]];
+            if (index >= range.location && index <= range.location + range.length - 1) {
+                [self highlightWordContainingCharacterAtRange:range];
+            }
+        }
+    }
+    [super touchesBegan:touches withEvent:event];
+}
+
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event{
     UITouch *touch = [touches anyObject];
     if (self.clickTextArray) {
@@ -165,16 +206,16 @@
                 if (model.clickTextActionBlock) {
                     model.clickTextActionBlock();
                 }
+                [self removeHighlight];
             }
         }
     }
-//    NSRange r = [self.text rangeOfString:@"覃雨翔"];
-//
-//    CFIndex index = [self characterIndexAtPoint:[touch locationInView:self]];
-//    if (index>=r.location&&index<=r.location+r.length-1) {
-//        NSLog(@"选中了");
-//    }
     [super touchesEnded:touches withEvent:event];
+}
+
+-(void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event{
+    [self removeHighlight];
+    [super touchesMoved:touches withEvent:event];
 }
 
 -(void)addClickText:(NSString*)text action:(ClickTextActionBlock)action{
